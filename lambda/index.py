@@ -20,7 +20,8 @@ bedrock_client = None
 
 # モデルID
 #MODEL_ID = os.environ.get("MODEL_ID", "us.amazon.nova-lite-v1:0")
-MODEL_ID ="https://70c8-34-145-167-181.ngrok-free.app/" #これ毎回変わるかも
+MODEL_ID ="https://2a9c-34-74-80-60.ngrok-free.app/" #これ毎回変わるかも
+
 
 def lambda_handler(event, context):
     try:
@@ -58,7 +59,7 @@ def lambda_handler(event, context):
         
         # Nova Liteモデル用のリクエストペイロードを構築
         # 会話履歴を含める
-        bedrock_messages = []
+        """bedrock_messages = []
         for msg in messages:
             if msg["role"] == "user":
                 bedrock_messages.append({
@@ -69,17 +70,15 @@ def lambda_handler(event, context):
                 bedrock_messages.append({
                     "role": "assistant", 
                     "content": [{"text": msg["content"]}]
-                })
+                })"""
         
         # リクエストペイロード
         request_payload = {
-            "messages": bedrock_messages,
-            "inferenceConfig": {
-                "maxTokens": 512,
-                "stopSequences": [],
-                "temperature": 0.7,
-                "topP": 0.9
-            }
+            "prompt": "string",
+            "max_new_tokens": 512,
+            "do_sample": True,
+            "temperature": 0.7,
+            "top_p": 0.9
         }
 
         ##-------
@@ -113,7 +112,7 @@ def lambda_handler(event, context):
 
         # レスポンスを解析
         response_body = json.loads(response['body'].read())
-        print("Bedrock response:", json.dumps(response_body, default=str))
+        print("response:", json.dumps(response_body, default=str))
         
         # 応答の検証
         if not response_body.get('output') or not response_body['output'].get('message') or not response_body['output']['message'].get('content'):
@@ -138,9 +137,8 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Methods": "OPTIONS,POST"
             },
             "body": json.dumps({
-                "success": True,
-                "response": assistant_response,
-                "conversationHistory": messages
+                "generated_text": assistant_response,
+                "response_time": 0
             })
         }
         
