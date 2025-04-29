@@ -4,6 +4,7 @@ import os
 import boto3
 import re  # 正規表現モジュールをインポート
 from botocore.exceptions import ClientError
+import urllib.request
 
 
 # Lambda コンテキストからリージョンを抽出する関数
@@ -18,11 +19,12 @@ def extract_region_from_arn(arn):
 bedrock_client = None
 
 # モデルID
-MODEL_ID = os.environ.get("MODEL_ID", "us.amazon.nova-lite-v1:0")
+#MODEL_ID = os.environ.get("MODEL_ID", "us.amazon.nova-lite-v1:0")
+MODEL_ID ="https://70c8-34-145-167-181.ngrok-free.app/" #これ毎回変わるかも
 
 def lambda_handler(event, context):
     try:
-        # コンテキストから実行リージョンを取得し、クライアントを初期化
+        """# コンテキストから実行リージョンを取得し、クライアントを初期化
         global bedrock_client
         if bedrock_client is None:
             region = extract_region_from_arn(context.invoked_function_arn)
@@ -35,7 +37,7 @@ def lambda_handler(event, context):
         user_info = None
         if 'requestContext' in event and 'authorizer' in event['requestContext']:
             user_info = event['requestContext']['authorizer']['claims']
-            print(f"Authenticated user: {user_info.get('email') or user_info.get('cognito:username')}")
+            print(f"Authenticated user: {user_info.get('email') or user_info.get('cognito:username')}")"""
         
         # リクエストボディの解析
         body = json.loads(event['body'])
@@ -69,7 +71,7 @@ def lambda_handler(event, context):
                     "content": [{"text": msg["content"]}]
                 })
         
-        # invoke_model用のリクエストペイロード
+        # リクエストペイロード
         request_payload = {
             "messages": bedrock_messages,
             "inferenceConfig": {
@@ -79,16 +81,36 @@ def lambda_handler(event, context):
                 "topP": 0.9
             }
         }
+
+        ##-------
+        url = f"{MODEL_ID}/generate"  
+        # FastAPI呼び出し 
+        request = urllib.request.Request(
+            url=url,
+            data=json.dumps(request_payload).encode('utf-8'),  # JSONデータをバイト列に変換
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        response = urllib.request.urlopen(request)
+
+
+        # MODEL_ID = os.environ.get("MODEL_ID", "us.amazon.nova-lite-v1:0")
+        ##--------        
+
+
+        
         
         print("Calling Bedrock invoke_model API with payload:", json.dumps(request_payload))
         
-        # invoke_model APIを呼び出し
+        """# invoke_model APIを呼び出し
         response = bedrock_client.invoke_model(
             modelId=MODEL_ID,
             body=json.dumps(request_payload),
             contentType="application/json"
-        )
-        
+        )"""
+
+
+
         # レスポンスを解析
         response_body = json.loads(response['body'].read())
         print("Bedrock response:", json.dumps(response_body, default=str))
